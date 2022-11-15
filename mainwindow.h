@@ -5,6 +5,7 @@
 #include <QListWidget>
 #include <QTimer>
 #include <QKeyEvent>
+#include "PCBwidget.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -42,10 +43,7 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
-    void keyPressEvent(QKeyEvent *event);    //设置回车响应函数
-
-signals:
-    void Suspend();
+    void keyPressEvent(QKeyEvent *event) override;    //设置回车响应函数
 
 private slots:
     void refresh();
@@ -54,7 +52,7 @@ private slots:
     void on_btnWaiting_clicked();
     void on_btnDeWaiting_clicked();
 
-    void on_btnSuspend_clicked();
+    void Suspend(PCBwidget *p);
     void on_btnDeSuspend_clicked();
 
 private:
@@ -70,7 +68,7 @@ private:
     int timeSlice;//时间片大小
     int counter=0;
 
-    int memory[735];//内存条，总共735个单位大小
+    int memory[777];//内存条，总共777个单位大小
 
     QTimer *timer;//计时器
 

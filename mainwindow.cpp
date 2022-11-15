@@ -4,10 +4,9 @@
 #include <QMessageBox>
 #include <QTimer>
 #include <QCheckBox>
+#include <QObject>
 
-MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent)
-    , ui(new Ui::MainWindow)
+MainWindow::MainWindow(QWidget *parent): QMainWindow(parent), ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
 
@@ -31,14 +30,14 @@ MainWindow::MainWindow(QWidget *parent)
     QWidget* w=new QWidget(this);
     w->setLayout(layout);
     w->setStyleSheet("QWidget{font:12pt;font-family:Times New Roman;background-color:red}");
-    w->setGeometry(QRect(414,103,388,100));//x,y,width,heigth;原点坐标414，103，宽度388，总高度735
+    w->setGeometry(QRect(414,103,388,100));//x,y,width,heigth;原点坐标414，103，宽度388，总高度777
 
     //初始化内存条
     for(int i=0;i<100;i++)//操作系统id为0
     {
         memory[i]=0;
     }
-    for(int i=100;i<735;i++)//未分配分区id为-1
+    for(int i=100;i<777;i++)//未分配分区id为-1
     {
         memory[i]=-1;
     }
@@ -171,7 +170,7 @@ int MainWindow::selectBlock()
     int length=0;
     bool status=false;//是否在计算长度
     int start=-1;//起始地址
-    for(int i=100;i<735;i++)
+    for(int i=100;i<777;i++)
     {
         if(status)
         {
@@ -204,7 +203,14 @@ int MainWindow::selectBlock()
             }
         }
     }
-    return start;
+    if(length>=needMemory)
+    {
+        return start;
+    }
+    else//当最后一个单位为空，但总长度不够时
+    {
+        return -1;
+    }
 }
 void MainWindow::addMemoryList(QString pid,int start,int needMemory)
 {
@@ -218,17 +224,19 @@ void MainWindow::addMemoryList(QString pid,int start,int needMemory)
     layout->addWidget(y,1,0,1,1);
     layout->addWidget(l,1,1,1,1);
 
-    QWidget* w=new QWidget(this);
+    PCBwidget* w=new PCBwidget(this);
     w->setObjectName(pid);//方便删除
     w->setLayout(layout);
 
     //随机颜色
     QColor clr(rand() % 256, rand() % 256, rand() % 256);
-    QString cs=QString("QWidget{font:12pt;font-family:Times New Roman;background-color:%1}").arg(clr.name());
+    QString cs=QString("*{font:12pt;font-family:Times New Roman;background-color:%1}").arg(clr.name());
     w->setStyleSheet(cs);
 
-    w->setGeometry(QRect(414,103+start,388,needMemory));//x,y,width,heigth;原点坐标414，103，宽度388，总高度735
+    w->setGeometry(QRect(414,103+start,388,needMemory));//x,y,width,heigth;原点坐标414，103，宽度388，总高度777
     w->show();
+
+    QObject::connect(w,SIGNAL(whichPCB(PCBwidget*)),this,SLOT(Suspend(PCBwidget*)));
 
     for(int i=start;i<start+needMemory;i++)
     {
@@ -397,45 +405,38 @@ void MainWindow::on_btnDeWaiting_clicked()
     timer->start(1000);
 }
 
-void MainWindow::on_btnSuspend_clicked()
+void MainWindow::Suspend(PCBwidget* p)
 {
     timer->stop();
 
-    for(int i=0;i<ui->PCBlist->count();i++)
+    QString name=p->findChild<QLabel*>("name")->text();
+    for(mypcb m:pcb_list)
     {
-        QListWidgetItem* item=ui->PCBlist->item(i);
-        QCheckBox* box=ui->PCBlist->itemWidget(item)->findChild<QCheckBox*>("checkbox");
-        QString name=ui->PCBlist->itemWidget(item)->findChild<QLabel*>("name")->text().mid(4);
-        if(box->isChecked())
+        if(m.name==name)
         {
-            for(mypcb m:pcb_list)
+            QString status=m.status;
+            if(status=="suspend")
             {
-                if(m.name==name)
-                {
-                    QString status=m.status;
-                    if(status=="suspend")
-                    {
-                        continue;
-                    }
-                    else if(status=="running")
-                    {
-                        ui->RunningPCB->clear();
-                    }
-                    else if(status=="ready")
-                    {
-                        removePCB(pcb_ready,m);
-                        addToList(pcb_ready,ui->ReadyPCB);
-                    }
-                    else if(status=="waiting")
-                    {
-                        removePCB(pcb_waiting,m);
-                        addToList(pcb_waiting,ui->WaitingPCB);
-                    }
-                    pcb_suspend.append(m);
-                }
+                continue;
             }
+            else if(status=="running")
+            {
+                ui->RunningPCB->clear();
+            }
+            else if(status=="ready")
+            {
+                removePCB(pcb_ready,m);
+                addToList(pcb_ready,ui->ReadyPCB);
+            }
+            else if(status=="waiting")
+            {
+                removePCB(pcb_waiting,m);
+                addToList(pcb_waiting,ui->WaitingPCB);
+            }
+            pcb_suspend.append(m);
         }
     }
+
     for(mypcb p:pcb_suspend)
     {
         refreshStatus(p.name,"suspend");
