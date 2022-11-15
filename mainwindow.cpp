@@ -280,6 +280,14 @@ void MainWindow::refresh()
             //刷新running序列
             ui->RunningPCB->clear();
             addPCB(pcb_running,ui->RunningPCB);
+
+            for(mypcb &m:pcb_list)
+            {
+                if(m.name==pcb_running.name)
+                {
+                    m.time=pcb_running.time;
+                }
+            }
         }
     }
 }
